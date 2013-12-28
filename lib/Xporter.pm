@@ -4,7 +4,9 @@ use warnings; use strict;
 
 { package Xporter;
 	use warnings; use strict;
-	our $VERSION='0.0.4';
+	our $VERSION='0.0.5';
+	# 0.0.5 - export inheritance test written to highlight a problem area
+	# 			- problem area addessed; converted to use efficient jump table
 	#	0.0.4 - documentation additions;
 	#				- added tests & corrected any found problems
 	#	0.0.3 - added auto-ISA-adding (via push) when this mod is used.
@@ -19,23 +21,18 @@ use warnings; use strict;
 	# Alternate export-import method that doesn't undefine defaults by 
 	# default
 
-	my $tc2proto = {'&' => '&', '$'  => '$', '@' => '@',
-										'%'	=> '%', '*' => '*', 
-									};
-
 	sub add_to_caller_ISA($$) {
 		my ($pkg, $caller) = @_;
 			
-		if ($pkg eq __PACKAGE__) { 
-			no strict 'refs';
-			push @{$caller."::ISA"}, __PACKAGE__
-				unless grep /__PACKAGE__/, @{$caller."::ISA"};
+		if ($pkg eq __PACKAGE__) { no strict 'refs';
+			unshift @{$caller."::ISA"}, $pkg unless grep /$pkg/, @{$caller."::ISA"};
 		}
 	}
 
 	our %exporters;
 
-	sub import { my $pkg = shift;
+	sub import { 
+		my $pkg			= shift;
 		my $caller	= (caller)[0];
 
 		if ($pkg eq __PACKAGE__) {		# we are exporting
@@ -50,10 +47,7 @@ use warnings; use strict;
 			return 1;
 		}
 
-		my ($simple , $export, $exportok, $exporttags);
-		my @non_simple;
-
-		$simple = [ grep { /^\w/ or ((push @non_simple,$_), undef) } @_ ];
+		my ($export, $exportok, $exporttags);
 
 		{ no strict q(refs);
 			$export = \@{$pkg."::"."EXPORT"} || [];
@@ -64,29 +58,32 @@ use warnings; use strict;
 		my @allowed_exports = (@$export, @$exportok);
 
 		if (@_ and $_[0] eq '!' 	|| $_[0] eq '-' ) {
-			$#$export=-1;
+			$export=[];
 			shift @_;
 		}
 
-		for my $Xok (@_) {
-			push @$export, $Xok if grep /\Q$Xok\E/, @allowed_exports;
+		for (@_) {
+			push @$export, $_ if grep { /$_/ } @allowed_exports;
 		}
+
+		my $tc2proto = {'&' => '&', '$'  => '$', '@' => '@',
+										'%'	=> '%', '*' => '*', };
+
 		for(@$export) {
 			my $type = substr $_, 0, 1;
 			if (exists $tc2proto->{$type}) { $_ = substr($_,1) } 
-			else { $type='&' }
-			my $pt = $tc2proto->{$type};
+			elsif ($type =~ /\w/) { $type='&' }
+			else { require Carp; Carp::croak("Unknown type $type in $_"); }
 			my $colon_name	= "::" . $_ ;
 			my ($exf, $imf)	= ( $pkg . $colon_name, $caller . $colon_name);
-			if ($type eq '&') { no strict 'refs';
-				*$imf = \&$exf;
-			} else {
-				$pt = "\\$pt";
-				my $prg = "*$imf = $pt$exf";
-				eval '# line ' . __LINE__ .' '. __FILE__ ."\n
-							$prg";
-				$@ and warn $@;
-			}
+			no strict q(refs);
+			my $case = {
+				'&'	=>	\&$exf,
+				'$'	=>	\$$exf,
+				'@' =>	\@$exf,
+				'%' =>	\%$exf,
+				'*'	=>	 *$exf};
+			*$imf = $case->{$type};
 		}
 	}
 1}
@@ -101,7 +98,7 @@ Xporter - an exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.0.4"
+Version "0.0.5"
 
 
 =head1 SYNOPIS
