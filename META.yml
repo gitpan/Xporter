@@ -4,10 +4,11 @@ author:
   - 'LA Walsh (LAWALSH@cpan.org)'
 build_requires:
   ExtUtils::MakeMaker: 0
-configure_requires:
   P: v1.1.17
   Test::Simple: 0.44
   mem: v0.4.2
+configure_requires:
+  ExtUtils::MakeMaker: 0
 dynamic_config: 1
 generated_by: 'ExtUtils::MakeMaker version 6.82, CPAN::Meta::Converter version 2.132830'
 license: unknown
@@ -20,4 +21,4 @@ no_index:
     - t
     - inc
 requires: {}
-version: v0.0.5
+version: v0.0.6

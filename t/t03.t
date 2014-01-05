@@ -15,8 +15,6 @@ use warnings;
 
 	our @EXPORT;
 	our @EXPORT_OK;
-	#use mem(@EXPORT=qw(one $two %three @four), 
-	#				@EXPORT_OK=qw(&five));
 
 
 	sub one () {
@@ -40,7 +38,6 @@ use warnings;
 
 package main;
 use P;
-#use Exp;
 
 use Test::More tests=>3;
 

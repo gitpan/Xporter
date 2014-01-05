@@ -14,7 +14,6 @@ use lib("/home/law/bin/lib");
 use Test::More tests => 2;
 
 our @ISA;
-our @EXPORTS;
 use Xporter qw(import);
 use P;
 

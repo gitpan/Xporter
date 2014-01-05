@@ -8,13 +8,11 @@
 
 use strict;
 use warnings;
-use lib("/home/law/bin/lib");
 
 
 use Test::More tests => 4;
 
 our @ISA;
-our @EXPORTS;
 use Xporter;
 use P;
 

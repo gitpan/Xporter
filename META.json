@@ -22,14 +22,15 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "0"
+            "ExtUtils::MakeMaker" : "0",
+            "P" : "v1.1.17",
+            "Test::Simple" : "0.44",
+            "mem" : "v0.4.2"
          }
       },
       "configure" : {
          "requires" : {
-            "P" : "v1.1.17",
-            "Test::Simple" : "0.44",
-            "mem" : "v0.4.2"
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "runtime" : {
@@ -37,5 +38,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "v0.0.5"
+   "version" : "v0.0.6"
 }

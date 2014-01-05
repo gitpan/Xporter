@@ -8,7 +8,7 @@ WriteMakefile(
     VERSION_FROM => 'lib/Xporter.pm',
     AUTHOR       => 'LA Walsh (LAWALSH@cpan.org)',
     ABSTRACT     => "Alt. exporter w/persistent, dflts & auto ISA",
-		CONFIGURE_REQUIRES =>
+		TEST_REQUIRES =>
 								 => { 'Test::Simple' => '0.44', 'P' => '1.1.17',
 									 		 mem	=> '0.4.2' },
 		dist         => { TAR=> 'tar', TARFLAGS=> "-H v7 -h -cf " },

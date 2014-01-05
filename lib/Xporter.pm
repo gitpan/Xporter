@@ -4,7 +4,8 @@ use warnings; use strict;
 
 { package Xporter;
 	use warnings; use strict;
-	our $VERSION='0.0.5';
+	our $VERSION='0.0.6';
+	# 0.0.6 - comment cleanup; Change CONFIGURE_REQUIRES to TEST_REQUIRES
 	# 0.0.5 - export inheritance test written to highlight a problem area
 	# 			- problem area addessed; converted to use efficient jump table
 	#	0.0.4 - documentation additions;
@@ -16,8 +17,8 @@ use warnings; use strict;
 	# 							One must specifically disable defaults to turn them off.
 	# 0.0.1	- Initial split of code from iomon
 	#
-	require 5.8.0;
-
+	#require 5.8.0;
+	
 	# Alternate export-import method that doesn't undefine defaults by 
 	# default
 
@@ -29,17 +30,38 @@ use warnings; use strict;
 		}
 	}
 
+	sub cmp_ver($$) {
+		my ($v1, $v2) = @_;
+		my $i=0;
+		while($i<@$v2 && $i<@$v1) {
+			my $r = $v1->[$i] cmp $v2->[$i];
+			return $r if $r;
+			++$i;
+		}
+	}
+
 	our %exporters;
 
 	sub import { 
 		my $pkg			= shift;
 		my $caller	= (caller)[0];
 
+		if (@_ && $_[0] =~ /^v?([\d\._]+)$/) {
+			my $verwanted = $1;
+			my @v1=split /_|\./, $verwanted;
+			my @v2=split /_|\./, $VERSION;
+			if (cmp_ver(\@v1, \@v2) <0 ) {
+				require Carp; 
+				Carp::Croak("Version $verwanted was asked for while this is version $VERSION");
+			}
+			shift;
+		}
+
 		if ($pkg eq __PACKAGE__) {		# we are exporting
 
 			if (@_ && $_[0] eq q(import)) {
 				no strict q(refs);
-				*{$caller."::import"} = \*{__PACKAGE__."::import"};
+				*{$caller."::import"} = \*{$pkg."::import"};
 			} else {
 				add_to_caller_ISA($pkg, $caller);
 			}
@@ -54,6 +76,7 @@ use warnings; use strict;
 			$exportok = \@{$pkg."::"."EXPORT_OK"} || [];
 			$exporttags = \%{$pkg."::"."EXPORT_TAGS"};
 		}
+
 		
 		my @allowed_exports = (@$export, @$exportok);
 
@@ -93,12 +116,12 @@ use warnings; use strict;
 =head1 NAME
 
 
-Xporter - an exporter with persistant defaults & auto-ISA
+Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 
 =head1 VERSION
 
-Version "0.0.5"
+Version "0.0.6"
 
 
 =head1 SYNOPIS
