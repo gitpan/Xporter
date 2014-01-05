@@ -4,7 +4,8 @@ use warnings; use strict;
 
 { package Xporter;
 	use warnings; use strict;
-	our $VERSION='0.0.6';
+	our $VERSION='0.0.7';
+	# 0.0.7 - 'require' version# bugfix
 	# 0.0.6 - comment cleanup; Change CONFIGURE_REQUIRES to TEST_REQUIRES
 	# 0.0.5 - export inheritance test written to highlight a problem area
 	# 			- problem area addessed; converted to use efficient jump table
@@ -38,6 +39,7 @@ use warnings; use strict;
 			return $r if $r;
 			++$i;
 		}
+		return 0;
 	}
 
 	our %exporters;
@@ -50,9 +52,9 @@ use warnings; use strict;
 			my $verwanted = $1;
 			my @v1=split /_|\./, $verwanted;
 			my @v2=split /_|\./, $VERSION;
-			if (cmp_ver(\@v1, \@v2) <0 ) {
+			if (cmp_ver(\@v1, \@v2) >0 ) {
 				require Carp; 
-				Carp::Croak("Version $verwanted was asked for while this is version $VERSION");
+				Carp::croak("Version $verwanted was asked for while this is version $VERSION");
 			}
 			shift;
 		}
@@ -121,7 +123,7 @@ Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.0.6"
+Version "0.0.7"
 
 
 =head1 SYNOPIS
