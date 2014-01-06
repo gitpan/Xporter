@@ -22,10 +22,10 @@
    "prereqs" : {
       "build" : {
          "requires" : {
-            "ExtUtils::MakeMaker" : "0",
-            "P" : "v1.1.17",
+            "ExtUtils::MakeMaker" : "v6.8.2",
+            "P" : "v1.1.20",
             "Test::Simple" : "0.44",
-            "mem" : "v0.4.2"
+            "mem" : "v0.4.3"
          }
       },
       "configure" : {
@@ -38,5 +38,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "v0.0.7"
+   "version" : "v0.0.8"
 }

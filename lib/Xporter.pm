@@ -4,7 +4,8 @@ use warnings; use strict;
 
 { package Xporter;
 	use warnings; use strict;
-	our $VERSION='0.0.7';
+	our $VERSION='0.0.8';
+	# 0.0.8 - add current dep for BUILD_REQ of ExtMM
 	# 0.0.7 - 'require' version# bugfix
 	# 0.0.6 - comment cleanup; Change CONFIGURE_REQUIRES to TEST_REQUIRES
 	# 0.0.5 - export inheritance test written to highlight a problem area
@@ -123,7 +124,7 @@ Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.0.7"
+Version "0.0.8"
 
 
 =head1 SYNOPIS

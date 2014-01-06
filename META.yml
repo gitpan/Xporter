@@ -3,10 +3,10 @@ abstract: 'Alt. exporter w/persistent, dflts & auto ISA'
 author:
   - 'LA Walsh (LAWALSH@cpan.org)'
 build_requires:
-  ExtUtils::MakeMaker: 0
-  P: v1.1.17
+  ExtUtils::MakeMaker: v6.8.2
+  P: v1.1.20
   Test::Simple: 0.44
-  mem: v0.4.2
+  mem: v0.4.3
 configure_requires:
   ExtUtils::MakeMaker: 0
 dynamic_config: 1
@@ -21,4 +21,4 @@ no_index:
     - t
     - inc
 requires: {}
-version: v0.0.7
+version: v0.0.8
