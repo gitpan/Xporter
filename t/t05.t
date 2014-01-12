@@ -2,7 +2,7 @@
 use warnings; use strict;
 
 { package module_adder; use warnings; use strict;
-	use mem; use P;
+	use mem; 
 	our (@EXPORT, @EXPORT_OK);
 	our $lastsum;
 	our @lastargs;
@@ -12,8 +12,7 @@ use warnings; use strict;
 	sub adder($$) {@lastargs=@_; $lastsum=$_[0]+$_[1]}
 	sub print_last_result () {
 		if (@lastargs && defined $lastsum){
-			 # using P allows answer printed or as string
-			P "%s = %s\n", (join ' + ' , @lastargs), $lastsum;
+			sprintf "%s = %s", (join ' + ' , @lastargs), $lastsum;
 		}
 	}
 }
