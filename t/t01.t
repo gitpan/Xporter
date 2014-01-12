@@ -8,20 +8,18 @@
 
 use strict;
 use warnings;
-use lib("/home/law/bin/lib");
 
 
 use Test::More tests => 2;
 
 our @ISA;
 use Xporter qw(import);
-use P;
 
 
 ok(main->can('import'), "main can import");
 
 
-ok((0 == grep m{Xporter}, @ISA), P "ISA doesn't have Xporter:%s", \@ISA);
+ok((0 == grep m{Xporter}, @ISA), "ISA doesn't have Xporter");
 
 
 

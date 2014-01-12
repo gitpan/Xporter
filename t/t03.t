@@ -37,7 +37,6 @@ use warnings;
 
 
 package main;
-use P;
 
 use Test::More tests=>3;
 
@@ -45,7 +44,7 @@ use Exp qw(! $two five);
 
 my $val = eval '$three{is_three}';
 
-ok(!(defined $val), P "val was %s (negate default export)", $val);
+ok(!(defined $val), "val was unavailable(negate default export)" );
 
 ok(five eq "is_five", "still got five");
 ok($two eq "is_two", "and two");

@@ -14,7 +14,6 @@ use Test::More tests => 4;
 
 our @ISA;
 use Xporter;
-use P;
 
 ok(Xporter->can('import'), "Xporter can import");
 
@@ -22,7 +21,7 @@ ok(Xporter->can('import'), "Xporter can import");
 ok(main->can('import'), "main can import");
 
 
-ok((1 == grep m{Xporter}, @ISA), P "ISA has Xporter:%s", \@ISA);
+ok((1 == grep m{Xporter}, @ISA), "ISA has Xporter" );
 
 
 @ISA=();

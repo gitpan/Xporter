@@ -4,7 +4,9 @@ use warnings; use strict;
 
 { package Xporter;
 	use warnings; use strict;
-	our $VERSION='0.0.8';
+	our $VERSION='0.0.9';
+	# 0.0.9 - add alternate version format for ExtMM(this system sucks)
+	#       - remove diagnostic messages from tests (required P)
 	# 0.0.8 - add current dep for BUILD_REQ of ExtMM
 	# 0.0.7 - 'require' version# bugfix
 	# 0.0.6 - comment cleanup; Change CONFIGURE_REQUIRES to TEST_REQUIRES
@@ -37,7 +39,7 @@ use warnings; use strict;
 		my $i=0;
 		while($i<@$v2 && $i<@$v1) {
 			my $r = $v1->[$i] cmp $v2->[$i];
-			return $r if $r;
+			return $r if $r<0;
 			++$i;
 		}
 		return 0;
@@ -53,7 +55,7 @@ use warnings; use strict;
 			my $verwanted = $1;
 			my @v1=split /_|\./, $verwanted;
 			my @v2=split /_|\./, $VERSION;
-			if (cmp_ver(\@v1, \@v2) >0 ) {
+			if (cmp_ver(\@v1, \@v2) <0 ) {
 				require Carp; 
 				Carp::croak("Version $verwanted was asked for while this is version $VERSION");
 			}
@@ -124,7 +126,7 @@ Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.0.8"
+Version "0.0.9"
 
 
 =head1 SYNOPIS

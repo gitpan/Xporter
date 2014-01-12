@@ -2,7 +2,7 @@
 use warnings; use strict;
 
 { package sx;
-	use mem; use P;
+	use mem;
 	our @EXPORT;
 
 	sub s1 () {return 111}
