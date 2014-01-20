@@ -4,8 +4,8 @@ use warnings; use strict;
 
 { package Xporter;
 	use warnings; use strict;
-	our $VERSION='0.0.10';
-	# 0.0.10 - Remove P from another test (missed one);  Having to use
+	our $VERSION='0.0.11';
+	# 0.0.11 - Remove P from another test (missed one);  Having to use
 	#         replacement lang features is torture  on my RSI
 	# 0.0.9 - add alternate version format for ExtMM(this system sucks)
 	#       - remove diagnostic messages from tests (required P)
@@ -130,7 +130,7 @@ Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.0.10"
+Version "0.0.11"
 
 
 =head1 SYNOPIS
