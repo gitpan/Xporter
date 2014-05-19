@@ -1,11 +1,30 @@
 #!/usr/bin/perl
-use warnings; use strict;
+BEGIN { require $_.".pm" && $_->import for qw(strict warnings) }
 # vim=:SetNumberAndWidth
+=encoding utf-8
+
+=head1 NAME
+
+Xporter - Alternative Exporter with persistant defaults & auto-ISA
+
+=head1 VERSION
+
+Version "0.0.12"
+
+=cut
 
 { package Xporter;
-	use warnings; use strict;
-	our $VERSION='0.0.11';
-	# 0.0.11 - Remove P from another test (missed one);  Having to use
+	BEGIN { require $_.".pm" && $_->import for qw(strict warnings) }
+	our $VERSION='0.0.12';
+	our @CARP_NOT;
+	use mem(@CARP_NOT=(__PACKAGE__));
+	# 0.0.12 - Add version tests to test 3 forms of version: v-string,
+	# 					numeric version, and string-based version.
+	# 					If universal method $VERSION doesn't exist, call our own
+	# 					method.
+	# 0.0.11 - Add a Configure_depends to see if that satisfies the one 
+	#          test client that is broken (sigh)
+	# 0.0.10 - Remove P from another test (missed one);  Having to use
 	#         replacement lang features is torture  on my RSI
 	# 0.0.9 - add alternate version format for ExtMM(this system sucks)
 	#       - remove diagnostic messages from tests (required P)
@@ -38,31 +57,49 @@ use warnings; use strict;
 
 	sub cmp_ver($$) {
 		my ($v1, $v2) = @_;
-		my $i=0;
-		while($i<@$v2 && $i<@$v1) {
+		for (my $i=0; $i<@$v2 && $i<@$v1; ++$i) {
 			my $r = $v1->[$i] cmp $v2->[$i];
-			return 1 if $r>=0;
-			++$i;
+			return -1 if $r<0;
 		}
 		return 0;
 	}
+
+
+	sub _version_specified($$;$) {
+		my ($pkg, $requires) = @_;
+		my $pkg_ver;
+		{	no strict 'refs';
+			$pkg_ver = ${$pkg."::VERSION"} || '(undef)';
+		}
+		my @v1=split /_|\./, $pkg_ver;
+		my @v2=split /_|\./, $requires;
+		if (@v1>2 || @v2>2) {
+			return if cmp_ver(\@v1, \@v2) >= 0;
+		} else {
+			return if $pkg_ver && ($pkg_ver cmp $requires)>=0;
+			return if $pkg_ver ne '(undef)' && $pkg_ver >= $requires;
+		}
+		require Carp; 
+		Carp::croak(sprintf "module %s %s required. This is only %s", $pkg, $requires, $pkg_ver);
+	}
+
 
 	our %exporters;
 
 	sub import { 
 		my $pkg			= shift;
 		my ($caller, $fl, $ln)	= (caller);
+		no strict 'refs';
 
-		if (@_ && $_[0] =~ /^v?([\d\._]+)$/) {
-			my $verwanted = $1;
-			my @v1=split /_|\./, $verwanted;
-			my @v2=split /_|\./, $VERSION;
-				if (cmp_ver(\@v1, \@v2) < 0 ) {
-				require Carp; 
-				Carp::croak(sprintf "File %s at line %s wanted version".
-				" %s of %s. ".
-				"	We have version %s.\n", $fl, $ln, $verwanted, $pkg, $VERSION);
-			}
+		#*{$caller."::import"}= \&{__PACKAGE__."::import"} if !exists ${$caller."::import"}->{CODE};
+
+		if (@_ && $_[0] && $_[0] =~ /^(v?[\d\._]+)$/) {
+			my @t=split /\./, $_[0];
+			no warnings;
+			if ($pkg->can("VERSION") && @t<3 && $1 ) { 
+				$pkg->VERSION($1) }
+			else {
+				_version_specified($pkg, $1); }
 			shift;
 		}
 
@@ -89,7 +126,7 @@ use warnings; use strict;
 		
 		my @allowed_exports = (@$export, @$exportok);
 
-		if (@_ and $_[0] eq '!' 	|| $_[0] eq '-' ) {
+		if (@_ and $_[0] and  $_[0] eq '!' 	|| $_[0] eq '-' ) {
 			$export=[];
 			shift @_;
 		}
@@ -102,6 +139,7 @@ use warnings; use strict;
 										'%'	=> '%', '*' => '*', };
 
 		for(@$export) {
+			next unless $_;
 			my $type = substr $_, 0, 1;
 			if (exists $tc2proto->{$type}) { $_ = substr($_,1) } 
 			elsif ($type =~ /\w/) { $type='&' }
@@ -120,25 +158,14 @@ use warnings; use strict;
 	}
 1}
 
-=encoding utf-8
-
-=head1 NAME
-
-
-Xporter - Alternative Exporter with persistant defaults & auto-ISA
-
-
-=head1 VERSION
-
-Version "0.0.11"
-
 
 =head1 SYNOPIS
 
 In the "Exporting" module:
 
-  { package module_adder; use warnings; use strict;
-    use mem;
+  { package module_adder [optional version]; 
+	  use warnings; use strict;
+    use mem;			# to allow using module in same file
     our (@EXPORT, @EXPORT_OK);
     our $lastsum;
     our @lastargs;
@@ -154,7 +181,7 @@ In the "Exporting" module:
     }
   }
 
-In using module (same or different file)
+In C<use>-ing module (same or different file)
 
   package main;  use warnings; use strict;
   use module_adder qw(print_last_result);
@@ -191,7 +218,7 @@ import list.
 
 =head2 Example
 
-Suppose your exporting function has exports:
+Suppose your module has exports:
 
   our (@EXPORT, @EXPORT_OK);
   use Xporter(@EXPORT=qw(one $two %three @four), 
@@ -213,5 +240,17 @@ may appear in later versions should those features be needed.
 
 Listing the EXPORT and EXPORT_OK assignments as params to Xporter 
 allow their types to be available to importing modules at compile time.
+
+=head2 Version Strings
+
+Version strings in the form of a decimal fraction, (0.001001), a
+V-String (v1.2.1 with no quotes), or a version string
+('1.1.1' or 'v1.1.1') are supported, though note, versions in
+different formats are not interchangeable.  The format used in 
+a modules documentation should be used.
+
+
+
+
 
 
