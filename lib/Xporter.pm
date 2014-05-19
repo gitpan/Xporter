@@ -15,9 +15,11 @@ Version "0.0.12"
 
 { package Xporter;
 	BEGIN { require $_.".pm" && $_->import for qw(strict warnings) }
-	our $VERSION='0.0.12';
+	our $VERSION='0.0.13';
 	our @CARP_NOT;
 	use mem(@CARP_NOT=(__PACKAGE__));
+	# 0.0.13 - Bug fix in string version compare -- didn't add leading
+	#          zeros for numeric compares;
 	# 0.0.12 - Add version tests to test 3 forms of version: v-string,
 	# 					numeric version, and string-based version.
 	# 					If universal method $VERSION doesn't exist, call our own
@@ -58,7 +60,11 @@ Version "0.0.12"
 	sub cmp_ver($$) {
 		my ($v1, $v2) = @_;
 		for (my $i=0; $i<@$v2 && $i<@$v1; ++$i) {
-			my $r = $v1->[$i] cmp $v2->[$i];
+			my ($v1p, $v1_num, $v1s) = ($v1->[$i] =~ /^([^\d]*)(\d+)([^\d]*)$/);
+			my ($v2p, $v2_num, $v2s) = ($v2->[$i] =~ /^([^\d]*)(\d+)([^\d]*)$/);
+			my $maxlen = $v1_num > $v2_num ? $v1_num : $v2_num;
+			my $r =	sprintf("%s%0*d%s", $v1p||"", $maxlen, $v1_num, $v1s||"") cmp
+							sprintf("%s%0*d%s", $v2p||"", $maxlen, $v2_num, $v2s||"");
 			return -1 if $r<0;
 		}
 		return 0;
