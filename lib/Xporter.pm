@@ -9,21 +9,29 @@ Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.0.12"
+Version "0.1.0"
 
 =cut
 
 { package Xporter;
 	BEGIN { require $_.".pm" && $_->import for qw(strict warnings) }
-	our $VERSION='0.0.13';
+	our $VERSION='0.1.0';
 	our @CARP_NOT;
 	use mem(@CARP_NOT=(__PACKAGE__));
+	# 0.1.0  - Bugfix: only match user input after stripping sigels or "nots" (!^-)
+	#        - Feature addition, in addition to a global, (solo) 'not'
+	#          at the beginning of a list to zero the default exports,
+	#          individual items in EXPORTS can be excluded by prefixing them
+	#          with a negating prefix (!^-);
+	#        - Added new test case for specific exclusion
+	#        - NOTE: blocking an export will ignore type as will asking for a non-dflt
+	# 0.0.14 - Documentation update
 	# 0.0.13 - Bug fix in string version compare -- didn't add leading
 	#          zeros for numeric compares;
 	# 0.0.12 - Add version tests to test 3 forms of version: v-string,
-	# 					numeric version, and string-based version.
-	# 					If universal method $VERSION doesn't exist, call our own
-	# 					method.
+	# 				 numeric version, and string-based version.
+	# 				 If universal method $VERSION doesn't exist, call our own
+	# 				 method.
 	# 0.0.11 - Add a Configure_depends to see if that satisfies the one 
 	#          test client that is broken (sigh)
 	# 0.0.10 - Remove P from another test (missed one);  Having to use
@@ -57,6 +65,12 @@ Version "0.0.12"
 		}
 	}
 
+	# adapted from Core::Types to avoid circular include
+	sub _EhV($*) {	my ($arg, $field) = @_;
+		(ref $arg && 'HASH' eq ref $arg) && 
+			defined $field && exists $arg->{$field} ?  $arg->{$field} : undef
+	}
+
 	sub cmp_ver($$) {
 		my ($v1, $v2) = @_;
 		for (my $i=0; $i<@$v2 && $i<@$v1; ++$i) {
@@ -86,18 +100,40 @@ Version "0.0.12"
 			return if $pkg_ver ne '(undef)' && $pkg_ver >= $requires;
 		}
 		require Carp; 
-		Carp::croak(sprintf "module %s %s required. This is only %s", $pkg, $requires, $pkg_ver);
+		Carp::croak(sprintf "module %s %s required. This is only %s", 
+												$pkg, $requires, $pkg_ver);
 	}
 
 
 	our %exporters;
 
+
+	our $tc2proto = {'&' => '&', '$'	=> '$', '@' => '@', '%'	=> '%', 
+									 '*' => '*', '!'	=> '!', '-' => '!', '^'	=> '!'};
+
+	sub list(;*) { return  @_ }
+
+	sub op_prefix(_);
+	sub op_prefix(_) {
+		return ($_, undef) unless $_;
+		my $type = substr $_, 0, 1;
+		my $mapped_op = _EhV $tc2proto, $type;
+		if ($mapped_op) {
+			$_ = substr($_,1);
+			if ($mapped_op eq '!') {
+				($_, $type, undef ) = op_prefix  }
+		} elsif ($type =~ /\w/) { $mapped_op=$type='&' }
+		($_, $type, $mapped_op);
+		
+	}
 	sub import { 
 		my $pkg			= shift;
 		my ($caller, $fl, $ln)	= (caller);
 		no strict 'refs';
 
-		#*{$caller."::import"}= \&{__PACKAGE__."::import"} if !exists ${$caller."::import"}->{CODE};
+
+		#*{$caller."::import"}= 
+		#\&{__PACKAGE__."::import"} if !exists ${$caller."::import"}->{CODE};
 
 		if (@_ && $_[0] && $_[0] =~ /^(v?[\d\._]+)$/) {
 			my @t=split /\./, $_[0];
@@ -110,7 +146,6 @@ Version "0.0.12"
 		}
 
 		if ($pkg eq __PACKAGE__) {		# we are exporting
-
 			if (@_ && $_[0] eq q(import)) {
 				no strict q(refs);
 				*{$caller."::import"} = \*{$pkg."::import"};
@@ -128,28 +163,42 @@ Version "0.0.12"
 			$exportok = \@{$pkg."::"."EXPORT_OK"} || [];
 			$exporttags = \%{$pkg."::"."EXPORT_TAGS"};
 		}
-
 		
 		my @allowed_exports = (@$export, @$exportok);
 
 		if (@_ and $_[0] and  $_[0] eq '!' 	|| $_[0] eq '-' ) {
+			printf("Export RESET\n");
 			$export=[];
 			shift @_;
 		}
 
-		for (@_) {
-			push @$export, $_ if grep { /$_/ } @allowed_exports;
+		for my $pat (@_) { 															# filter individual params
+			$_ = $pat;																		# passed to op_prefix
+			my ($name, $type, $mapped_op ) = op_prefix;
+			if ($mapped_op eq '!') {
+				if (grep /$name/,  @$export) {
+					my @new_export = grep { !/$name/ } @$export;
+					$export=\@new_export;
+				}
+			} elsif (grep /$name/,  @allowed_exports) {
+				#printf("allowing export of %s\n", $pat);
+				push @$export, $pat ;
+			} 
 		}
 
-		my $tc2proto = {'&' => '&', '$'  => '$', '@' => '@',
-										'%'	=> '%', '*' => '*', };
 
 		for(@$export) {
-			next unless $_;
-			my $type = substr $_, 0, 1;
-			if (exists $tc2proto->{$type}) { $_ = substr($_,1) } 
-			elsif ($type =~ /\w/) { $type='&' }
-			else { require Carp; Carp::croak("Unknown type $type in $_"); }
+			my ($type, $mapped_op);
+			#printf("_=%s:", $_||"undef");
+			($_, $type, $mapped_op) = op_prefix;
+			#printf("_=%s, t=%s, mapped=%s\n", $_||"undef", $type||"undef", $mapped_op||"undef");
+			if ($mapped_op) { 
+				print "skip exp of $_\n" if $mapped_op eq '!';
+				next if $mapped_op eq '!'; 
+			} else { 
+				require Carp; 
+				Carp::croak("Unknown type ". ($type||"(undef)") . " in " . ($_||"(undef)")); 
+			}
 			my $colon_name	= "::" . $_ ;
 			my ($exf, $imf)	= ( $pkg . $colon_name, $caller . $colon_name);
 			no strict q(refs);
@@ -208,23 +257,24 @@ Printing output:
 
 =head1 DESCRIPTION
 
-C<Xporter> provides Export functionality similar to Exporter, with
-some different behaviors to simplify common cases.
+C<Xporter>  provides  C<EXPORT>  functionality similar to  L<Exporter>  with
+some different rules to simplify common cases.
 
-One primary difference, in C<Xporter> is that the default EXPORT list
-remains the default EXPORT list unless you specifically ask for it
-to not be included.
+The primary difference, in  C<Xporter>  is that the default  C<EXPORT>  list
+remains the default  C<EXPORT>  list unless the user specifically asks for it
+to not be included, whereas in L<Exporter>, asking for any additional
+exports from the  C<EXPORT_OK>  list, clears the default  C<EXPORT>  list.
 
-In Exporter, if you ask for an addition export from the EXPORT_OK
-list, you automatically lose your I<defaults>.  The theory here being
-that if you want something extra you shouldn't be required to lose
-your default list.  The default list is easily enough NOT included
-by specifying '-' or '!' as the first parameter in the client's 
-import list. 
+C<Xporter>  makes it easy to reset or clear the default so that choice
+is left to the user. 
 
-=head2 Example
+To reset the default  C<EXPORT>  list to empty, a bare I<minus> ('-') or
+I<logical-not> sign ('!') is placed as the first parameter in the client's import
+list. 
 
-Suppose your module has exports:
+=head3 Example
+
+Suppose a module has exports:
 
   our (@EXPORT, @EXPORT_OK);
   use Xporter(@EXPORT=qw(one $two %three @four), 
@@ -233,27 +283,48 @@ Suppose your module has exports:
 In the using module, to only import symbols 'two' and 'five', 
 one would use:
 
+=head3 Example
+
   use MODULENAME qw(! $two five);
 
-That negates the default EXPORT list, and lets you selectively
-import the values you want from either the default or the OK list
-(modules in the default list don't need to be relisted in the OK list
-as it is presumed that they were OK to be exported or they would not
-have been defaults).
+That negates the default C<EXPORT> list, and allows selective import
+of the values wanted from either,  the default  C<EXPORT>  or the
+C<EXPORT_OK> lists.  I<Note:>  modules in the default list don't need 
+to be reiterated in the OK list as they are already assumed to be
+"OK" to export having been in the default list.
 
-Other functions of Exporter are not currently implemented though
-may appear in later versions should those features be needed.
+(New in 0.1) It is also possible to negate only 1 item from the 
+default C<EXPORT> list, as well as import optional symbols in 
+1 statement.  
 
-Listing the EXPORT and EXPORT_OK assignments as params to Xporter 
+=head3 Example
+
+  use MODULENAME qw(!$two five);      #or
+  use MODULENAME qw(!two five);
+
+Only export C<two> from the default export list will be 
+excluded.  Whereas export C<five> will be added to the list
+of items to import.
+
+Other functions of Exporter are not currently implemented, though
+certainly requests and code donations made via the CPAN issue database 
+will be considered if possible.
+
+=head2 Types and Type Export 
+
+Listing the EXPORT and EXPORT_OK assignments as params to Xporter will
 allow their types to be available to importing modules at compile time.
+the L<mem> module was provided as a generic way to force declarations
+into memory during Perl's initial BEGIN phase so they will be in effect
+when the program runs.
 
 =head2 Version Strings
 
 Version strings in the form of a decimal fraction, (0.001001), a
 V-String (v1.2.1 with no quotes), or a version string
 ('1.1.1' or 'v1.1.1') are supported, though note, versions in
-different formats are not interchangeable.  The format used in 
-a modules documentation should be used.
+different formats are not interchangeable.  The format specified
+in a module's documentation should be used.
 
 
 
