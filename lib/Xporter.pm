@@ -9,15 +9,16 @@ Xporter - Alternative Exporter with persistant defaults & auto-ISA
 
 =head1 VERSION
 
-Version "0.1.0"
+Version "0.1.1"
 
 =cut
 
 { package Xporter;
 	BEGIN { require $_.".pm" && $_->import for qw(strict warnings) }
-	our $VERSION='0.1.0';
+	our $VERSION='0.1.1';
 	our @CARP_NOT;
 	use mem(@CARP_NOT=(__PACKAGE__));
+	# 0.1.1  - Bad use of modern proptype (_) for old perls
 	# 0.1.0  - Bugfix: only match user input after stripping sigels or "nots" (!^-)
 	#        - Feature addition, in addition to a global, (solo) 'not'
 	#          at the beginning of a list to zero the default exports,
@@ -113,15 +114,15 @@ Version "0.1.0"
 
 	sub list(;*) { return  @_ }
 
-	sub op_prefix(_);
-	sub op_prefix(_) {
+	sub op_prefix;
+	sub op_prefix {
 		return ($_, undef) unless $_;
 		my $type = substr $_, 0, 1;
 		my $mapped_op = _EhV $tc2proto, $type;
 		if ($mapped_op) {
 			$_ = substr($_,1);
 			if ($mapped_op eq '!') {
-				($_, $type, undef ) = op_prefix  }
+				($_, $type, undef ) = op_prefix()  }
 		} elsif ($type =~ /\w/) { $mapped_op=$type='&' }
 		($_, $type, $mapped_op);
 		
@@ -174,7 +175,7 @@ Version "0.1.0"
 
 		for my $pat (@_) { 															# filter individual params
 			$_ = $pat;																		# passed to op_prefix
-			my ($name, $type, $mapped_op ) = op_prefix;
+			my ($name, $type, $mapped_op ) = op_prefix();
 			if ($mapped_op eq '!') {
 				if (grep /$name/,  @$export) {
 					my @new_export = grep { !/$name/ } @$export;
