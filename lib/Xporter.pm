@@ -15,9 +15,11 @@ Version "0.1.1"
 
 { package Xporter;
 	BEGIN { require $_.".pm" && $_->import for qw(strict warnings) }
-	our $VERSION='0.1.1';
+	our $VERSION='0.1.2';
 	our @CARP_NOT;
 	use mem(@CARP_NOT=(__PACKAGE__));
+	# 0.1.2	 - Bad version check found in self-testing;
+	#          Added test against 4 version formats
 	# 0.1.1  - Bad use of modern proptype (_) for old perls
 	# 0.1.0  - Bugfix: only match user input after stripping sigels or "nots" (!^-)
 	#        - Feature addition, in addition to a global, (solo) 'not'
@@ -81,6 +83,7 @@ Version "0.1.1"
 			my $r =	sprintf("%s%0*d%s", $v1p||"", $maxlen, $v1_num, $v1s||"") cmp
 							sprintf("%s%0*d%s", $v2p||"", $maxlen, $v2_num, $v2s||"");
 			return -1 if $r<0;
+			return 0 if $r>0;
 		}
 		return 0;
 	}
